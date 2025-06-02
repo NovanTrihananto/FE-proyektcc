@@ -7,6 +7,7 @@ const EditUser = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
+  const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -15,24 +16,20 @@ const EditUser = () => {
 
   // Fungsi ambil user berdasarkan ID, dibungkus useCallback supaya bisa dipakai di useEffect
   const getUserById = useCallback(async () => {
-    try {
-      const response = await axiosJWT.get(`${BASE_URL}/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const { name, email, gender } = response.data.data;
-      setName(name);
-      setEmail(email);
-      setGender(gender);
-    } catch (error) {
-      console.log(error);
-    }
-  }, [axiosJWT, id, token]);
-
-  useEffect(() => {
-    if (token) {
-      getUserById();
-    }
-  }, [token, getUserById]);
+  try {
+    const response = await axiosJWT.get(`${BASE_URL}/users/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const { name, email, gender } = response.data.data;
+    setName(name);
+    setEmail(email);
+    setGender(gender);
+    setLoading(false);
+  } catch (error) {
+    console.log(error);
+    setLoading(false);
+  }
+}, [axiosJWT, id, token]);
 
   const updateUser = async (e) => {
     e.preventDefault();
