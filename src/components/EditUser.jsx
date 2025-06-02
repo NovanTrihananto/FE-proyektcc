@@ -6,30 +6,32 @@ import useAxiosToken from "../hooks/useAxiosToken";
 const EditUser = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [gender, setGender] = useState("");
+  const [gender, setGender] = useState("Male");
   const [loading, setLoading] = useState(true);
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Pakai custom hook untuk axios dengan auto refresh token
   const { axiosJWT, token } = useAxiosToken();
 
-  // Fungsi ambil user berdasarkan ID, dibungkus useCallback supaya bisa dipakai di useEffect
   const getUserById = useCallback(async () => {
-  try {
-    const response = await axiosJWT.get(`${BASE_URL}/users/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const { name, email, gender } = response.data.data;
-    setName(name);
-    setEmail(email);
-    setGender(gender);
-    setLoading(false);
-  } catch (error) {
-    console.log(error);
-    setLoading(false);
-  }
-}, [axiosJWT, id, token]);
+    try {
+      const response = await axiosJWT.get(`${BASE_URL}/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const { name, email, gender } = response.data.data;
+      setName(name);
+      setEmail(email);
+      setGender(gender);
+    } catch (error) {
+      console.error("Gagal ambil data user:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [axiosJWT, id, token]);
+
+  useEffect(() => {
+    getUserById();
+  }, [getUserById]);
 
   const updateUser = async (e) => {
     e.preventDefault();
@@ -41,9 +43,13 @@ const EditUser = () => {
       );
       navigate("/dashboard");
     } catch (error) {
-      console.log(error);
+      console.error("Gagal update user:", error);
     }
   };
+
+  if (loading) {
+    return <p className="has-text-centered mt-5">Loading data user...</p>;
+  }
 
   return (
     <div className="columns mt-5 is-centered">
@@ -58,6 +64,7 @@ const EditUser = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Name"
+                required
               />
             </div>
           </div>
@@ -66,11 +73,12 @@ const EditUser = () => {
             <label className="label">Email</label>
             <div className="control">
               <input
-                type="text"
+                type="email"
                 className="input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
+                required
               />
             </div>
           </div>
@@ -87,13 +95,17 @@ const EditUser = () => {
             </div>
           </div>
 
-          <div className="field">
-            <button type="submit" className="button is-success mr-2">
-              Update
-            </button>
-            <Link to="/dashboard" className="button is-text">
-              Kembali
-            </Link>
+          <div className="field is-grouped">
+            <div className="control">
+              <button type="submit" className="button is-success">
+                Update
+              </button>
+            </div>
+            <div className="control">
+              <Link to="/dashboard" className="button is-light">
+                Kembali
+              </Link>
+            </div>
           </div>
         </form>
       </div>
