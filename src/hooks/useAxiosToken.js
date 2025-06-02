@@ -16,7 +16,9 @@ const useAxiosToken = () => {
 
   const refreshToken = useCallback(async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/token`);
+      const response = await axios.get(`${BASE_URL}/token`, {
+        withCredentials: true, // Kirim cookie httpOnly
+      });
       const accessToken = response.data.accessToken;
       setToken(accessToken);
       const decoded = jwtDecode(accessToken);
@@ -26,7 +28,12 @@ const useAxiosToken = () => {
       setUserId(decoded.id);
     } catch (error) {
       setToken("");
-      navigate("/login");
+      if (error.response?.status === 401) {
+        // Refresh token invalid atau expired
+        navigate("/login");
+      } else {
+        console.error("Failed to refresh token:", error);
+      }
     }
   }, [navigate]);
 
@@ -37,7 +44,9 @@ const useAxiosToken = () => {
 
         if (expire * 1000 < currentDate.getTime()) {
           try {
-            const response = await axios.get(`${BASE_URL}/token`);
+            const response = await axios.get(`${BASE_URL}/token`, {
+              withCredentials: true,
+            });
             const accessToken = response.data.accessToken;
             setToken(accessToken);
 
@@ -50,7 +59,9 @@ const useAxiosToken = () => {
             config.headers.Authorization = `Bearer ${accessToken}`;
           } catch (err) {
             console.error("Interceptor failed to refresh token:", err);
-            navigate("/");
+            if (err.response?.status === 401) {
+              navigate("/login");
+            }
             return Promise.reject(err);
           }
         } else {
@@ -61,7 +72,6 @@ const useAxiosToken = () => {
       },
       (error) => {
         console.error("Interceptor request error:", error);
-        navigate("/");
         return Promise.reject(error);
       }
     );
