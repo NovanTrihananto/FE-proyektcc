@@ -220,10 +220,7 @@ const DashboardUser = () => {
                 {course.Img && (
                   <div className="card-image">
                     <figure className="image is-4by3">
-                      <img
-                        src={`${BASE_URL}/images/${course.Img}`}
-                        alt={course.Judul}
-                      />
+                        <img src={course.Img} alt={course.Judul} />
                     </figure>
                   </div>
                 )}
