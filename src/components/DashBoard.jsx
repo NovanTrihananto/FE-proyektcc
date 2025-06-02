@@ -119,7 +119,7 @@ const Dashboard = () => {
                     <td>{user.gender}</td>
                     <td>
                       <Link
-                        to={`/EditUser/${user.id}`}
+                        to={`/edit/${user.id}`}
                         className="button is-small is-info mr-2"
                       >
                         Edit
