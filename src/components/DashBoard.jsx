@@ -192,11 +192,11 @@ const Dashboard = () => {
                     <td>
                       {course.Img ? (
                         <figure className="image is-64x64">
-                          <img
-                            src={`${BASE_URL}/images/${course.Img}`}
-                            alt={course.Judul}
-                            style={{ objectFit: "cover" }}
-                          />
+                      <img
+                        src={course.Img}
+                        alt={course.Judul}
+                        style={{ objectFit: "cover", width: "100%", height: "200px" }}
+                      />
                         </figure>
                       ) : (
                         <span className="has-text-grey-light">
