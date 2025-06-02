@@ -10,26 +10,30 @@ const useAxiosToken = () => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [userId, setUserId] = useState("");
+  const tokenRef = useRef("");
   const navigate = useNavigate();
 
   const axiosJWT = useRef(axios.create()).current;
+  const axiosRefresh = useRef(axios.create()).current;
 
   const refreshToken = useCallback(async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/token`, {
-        withCredentials: true, // Kirim cookie httpOnly
+      const response = await axiosRefresh.get(`${BASE_URL}/token`, {
+        withCredentials: true,
       });
       const accessToken = response.data.accessToken;
-      setToken(accessToken);
       const decoded = jwtDecode(accessToken);
+
+      setToken(accessToken);
+      tokenRef.current = accessToken;
       setName(decoded.name);
       setExpire(decoded.exp);
       setRole(decoded.role);
       setUserId(decoded.id);
     } catch (error) {
       setToken("");
+      tokenRef.current = "";
       if (error.response?.status === 401) {
-        // Refresh token invalid atau expired
         navigate("/login");
       } else {
         console.error("Failed to refresh token:", error);
@@ -44,13 +48,14 @@ const useAxiosToken = () => {
 
         if (expire * 1000 < currentDate.getTime()) {
           try {
-            const response = await axios.get(`${BASE_URL}/token`, {
+            const response = await axiosRefresh.get(`${BASE_URL}/token`, {
               withCredentials: true,
             });
             const accessToken = response.data.accessToken;
-            setToken(accessToken);
-
             const decoded = jwtDecode(accessToken);
+
+            setToken(accessToken);
+            tokenRef.current = accessToken;
             setName(decoded.name);
             setExpire(decoded.exp);
             setRole(decoded.role);
@@ -65,13 +70,12 @@ const useAxiosToken = () => {
             return Promise.reject(err);
           }
         } else {
-          config.headers.Authorization = `Bearer ${token}`;
+          config.headers.Authorization = `Bearer ${tokenRef.current}`;
         }
 
         return config;
       },
       (error) => {
-        console.error("Interceptor request error:", error);
         return Promise.reject(error);
       }
     );
@@ -79,7 +83,7 @@ const useAxiosToken = () => {
     return () => {
       axiosJWT.interceptors.request.eject(interceptor);
     };
-  }, [axiosJWT, expire, navigate, token]);
+  }, [axiosJWT, expire, navigate]);
 
   useEffect(() => {
     refreshToken();
