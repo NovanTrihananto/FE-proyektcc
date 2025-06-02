@@ -15,75 +15,77 @@ const useAxiosToken = () => {
 
   const axiosJWT = useRef(axios.create()).current;
   const axiosRefresh = useRef(axios.create()).current;
+const expireRef = useRef("");
 
-  const refreshToken = useCallback(async () => {
-    try {
-      const response = await axiosRefresh.get(`${BASE_URL}/token`, {
-        withCredentials: true,
-      });
-      const accessToken = response.data.accessToken;
-      const decoded = jwtDecode(accessToken);
+const refreshToken = useCallback(async () => {
+  try {
+    const response = await axiosRefresh.get(`${BASE_URL}/token`, {
+      withCredentials: true,
+    });
+    const accessToken = response.data.accessToken;
+    const decoded = jwtDecode(accessToken);
 
-      setToken(accessToken);
-      tokenRef.current = accessToken;
-      setName(decoded.name);
-      setExpire(decoded.exp);
-      setRole(decoded.role);
-      setUserId(decoded.id);
-    } catch (error) {
-      setToken("");
-      tokenRef.current = "";
-      if (error.response?.status === 401) {
-        navigate("/login");
-      } else {
-        console.error("Failed to refresh token:", error);
-      }
+    setToken(accessToken);
+    tokenRef.current = accessToken;
+    setName(decoded.name);
+    setExpire(decoded.exp);
+    expireRef.current = decoded.exp;
+    setRole(decoded.role);
+    setUserId(decoded.id);
+  } catch (error) {
+    setToken("");
+    tokenRef.current = "";
+    if (error.response?.status === 401) {
+      navigate("/login");
+    } else {
+      console.error("Failed to refresh token:", error);
     }
-  }, [navigate]);
+  }
+}, [navigate]);
 
-  const setupInterceptor = useCallback(() => {
-    const interceptor = axiosJWT.interceptors.request.use(
-      async (config) => {
-        const currentDate = new Date();
+const setupInterceptor = useCallback(() => {
+  const interceptor = axiosJWT.interceptors.request.use(
+    async (config) => {
+      const currentDate = new Date();
 
-        if (expire * 1000 < currentDate.getTime()) {
-          try {
-            const response = await axiosRefresh.get(`${BASE_URL}/token`, {
-              withCredentials: true,
-            });
-            const accessToken = response.data.accessToken;
-            const decoded = jwtDecode(accessToken);
+      if (expireRef.current * 1000 < currentDate.getTime()) {
+        try {
+          const response = await axiosRefresh.get(`${BASE_URL}/token`, {
+            withCredentials: true,
+          });
+          const accessToken = response.data.accessToken;
+          const decoded = jwtDecode(accessToken);
 
-            setToken(accessToken);
-            tokenRef.current = accessToken;
-            setName(decoded.name);
-            setExpire(decoded.exp);
-            setRole(decoded.role);
-            setUserId(decoded.id);
+          setToken(accessToken);
+          tokenRef.current = accessToken;
+          setName(decoded.name);
+          setExpire(decoded.exp);
+          expireRef.current = decoded.exp;
+          setRole(decoded.role);
+          setUserId(decoded.id);
 
-            config.headers.Authorization = `Bearer ${accessToken}`;
-          } catch (err) {
-            console.error("Interceptor failed to refresh token:", err);
-            if (err.response?.status === 401) {
-              navigate("/login");
-            }
-            return Promise.reject(err);
+          config.headers.Authorization = `Bearer ${accessToken}`;
+        } catch (err) {
+          console.error("Interceptor failed to refresh token:", err);
+          if (err.response?.status === 401) {
+            navigate("/login");
           }
-        } else {
-          config.headers.Authorization = `Bearer ${tokenRef.current}`;
+          return Promise.reject(err);
         }
-
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
+      } else {
+        config.headers.Authorization = `Bearer ${tokenRef.current}`;
       }
-    );
 
-    return () => {
-      axiosJWT.interceptors.request.eject(interceptor);
-    };
-  }, [axiosJWT, expire, navigate]);
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  return () => {
+    axiosJWT.interceptors.request.eject(interceptor);
+  };
+}, [axiosJWT, navigate]);
+
 
   useEffect(() => {
     refreshToken();
